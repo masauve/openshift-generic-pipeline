@@ -1,0 +1,5 @@
+openshift_master: 127.0.0.1:8443
+openshift_domain: 127.0.0.1.nip.io
+# Your OpenShift credentials
+username: developer
+password: developer

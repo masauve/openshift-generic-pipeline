@@ -1,0 +1,14 @@
+
+# The template to use to create the application
+template_url: https://raw.githubusercontent.com/gnunn1/openshift-generic-pipeline/master/openshift/templates/spring-crud-booster-template.yml
+
+# The DeployConfig name created by the template, used to disable triggers
+template_dc: spring-crud
+template_bc: spring-crud
+
+# What environments use for the prefix, i.e. spring-crud-dev, spring-crud-test where "spring-crud" would the prefix
+project_prefix: spring-crud
+display_prefix: "Spring Crud"
+
+# Whether to use ephemeral template
+jenkins_ephemeral: false

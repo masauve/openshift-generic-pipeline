@@ -1,0 +1,6 @@
+---
+- name: Install Pipeline in OpenShift
+  hosts: local
+  vars_files:
+    - vars/vars.yml
+  tasks:
