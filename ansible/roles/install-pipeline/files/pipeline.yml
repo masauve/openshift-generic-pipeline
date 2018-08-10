@@ -24,6 +24,16 @@ spec:
         }
 
         node {
+          stage 'test'
+          try {
+            sh "curl -s --head --request GET {{app_name}}.project_prefix:{{test_port}}/{{test_path}} | grep '200 OK'"
+            return true
+          } catch (Exception e) {
+            return false
+          }
+        }
+
+        node {
           stage 'approveTestDeployment' 
           input 'Promote the Dev image to Test?'
         }

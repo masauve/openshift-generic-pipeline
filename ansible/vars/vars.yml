@@ -9,5 +9,9 @@ app_name: spring-crud
 project_prefix: spring-crud
 display_prefix: "Spring Crud"
 
+# Pipeline smoke test with curl
+test_port: "8080"
+test_path: "api/fruits"
+
 # Whether to use ephemeral template
 jenkins_persistent: false
