@@ -1,6 +1,9 @@
 ---
 - name: Install Pipeline in OpenShift
-  hosts: local
+  hosts: cluster-up
+
   vars_files:
     - vars/vars.yml
-  tasks:
+  
+  roles:
+    - install-pipeline

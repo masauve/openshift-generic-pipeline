@@ -1,0 +1,9 @@
+---
+- name: Remove Projects from OpenShift
+  hosts: cluster-up
+
+  vars_files:
+    - vars/vars.yml
+
+  roles:
+    - teardown-pipeline

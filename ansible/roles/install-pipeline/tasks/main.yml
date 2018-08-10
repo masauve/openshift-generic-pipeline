@@ -2,12 +2,12 @@
 - name: Set ephemeral or persistent
   set_fact:
     jenkins_template: jenkins-ephemeral
-  when: jenkins_ephemeral
+  when: not jenkins_persistent
 
 - name: Set ephemeral or persistent
   set_fact:
     jenkins_template: jenkins-persistent
-  when: not jenkins_ephemeral
+  when: jenkins_persistent
 
 - name: Login in OpenShift
   shell: "oc login --insecure-skip-tls-verify=true -u {{ username }} -p {{ password }} {{ openshift_master }}"
@@ -32,36 +32,39 @@
   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"
   changed_when: "'exists' not in command_result.stderr"
 
-- name: Install application template
-  shell: "oc create -f template_url -n {{item}} -n {{project_prefix}}-dev"
-  ignore_errors: true
-
-- name: Create application in dev
-  shell: "oc new-app --template={{app_template}} -n {{project_prefix}}-dev"
+- name: Give jenkins SA access to dev
+  shell: "oc policy add-role-to-user edit system:serviceaccount:{{project_prefix}}-cicd:jenkins -n {{item}}"
   register: command_result
   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"
   changed_when: "'exists' not in command_result.stderr"
+  with_items:
+    - "{{project_prefix}}-dev"
+    - "{{project_prefix}}-test"
 
-# - name: Set ImageChange trigger to manual in dev
-#   shell: "oc set triggers dc product-catalog --containers='product-catalog' --from-image='product-catalog:latest' --manual=true -n product-catalog-dev"
+# - name: Enable test environment to pull images from dev
+#   shell: "oc policy add-role-to-group system:image-puller system:serviceaccounts:{{project-prefix}}-test -n {{project-prefix}}-dev"
 #   register: command_result
 #   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"
 #   changed_when: "'exists' not in command_result.stderr"
 
-- name: Create application in test
-  shell: "oc new-app --template={{project_prefix}}-dev/{{app_template}} -n {{project_prefix}}-test"
+# - name: Install application template
+#   shell: "oc create -f {{template_url}} -n {{project_prefix}}-dev"
+#   ignore_errors: true
+
+- name: Create application in environments
+  shell: |
+    oc process -f {{template_url}} | oc create -n {{project_prefix}}-{{item}} -f -
+    oc cancel-build bc/{{app_name}} -n {{project_prefix}}-{{item}}
+    oc set triggers dc {{app_name}} --containers='{{app_name}}' --from-image='{{app_name}}:latest' --manual=true -n {{project_prefix}}-{{item}}
   register: command_result
   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"
   changed_when: "'exists' not in command_result.stderr"
+  with_items:
+    - "dev"
+    - "test"
 
-# - name: Set ImageChange trigger to manual in test
-#   shell: "oc set triggers dc product-catalog --containers='product-catalog' --from-image='product-catalog:latest' --manual=true -n product-catalog-test"
-#   register: command_result
-#   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"
-#   changed_when: "'exists' not in command_result.stderr"
-
-# - name: Update test imagePullPolicy
-#   shell: "oc patch dc/product-catalog -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"product-catalog\",\"imagePullPolicy\":\"Always\"}]}}}}'"
+- name: Update test imagePullPolicy
+  shell: "oc patch dc/{{app_name}} -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"{{app_name}}\",\"imagePullPolicy\":\"Always\"}]}}}}'"
 
 - name: create temporary file
   tempfile:
@@ -72,16 +75,16 @@
 - name: Pipeline template
   template:
     src: "../files/pipeline.yml"
-    dest: "{{templatedPipeline}}"
+    dest: "{{templatedPipeline.path}}"
 
 - name: Create Pipeline
-  shell: "oc create -f {{templatedPipeline}} -n {{product-prefix}}-cicd"
+  shell: "oc create -f {{templatedPipeline.path}} -n {{project_prefix}}-cicd"
   register: command_result
   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"
   changed_when: "'exists' not in command_result.stderr"
 
 - name: Waiting for jenkins to be ready
-  command: curl -k --head --silent https://jenkins-{{product-prefix}}-cicd.{{ openshift_domain }}/login
+  command: curl -k --head --silent https://jenkins-{{project_prefix}}-cicd.{{ openshift_domain }}/login
   register: result
   until: result.stdout.find("200 OK") != -1
   retries: 30
@@ -93,6 +96,6 @@
     seconds: 10
 
 - name: Starting Pipeline
-  shell: "oc start-build {{product-prefix}}-pipeline -n {{product-prefix}}-cicd"
+  shell: "oc start-build {{project_prefix}}-pipeline -n {{project_prefix}}-cicd"
   register: command_result
   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"

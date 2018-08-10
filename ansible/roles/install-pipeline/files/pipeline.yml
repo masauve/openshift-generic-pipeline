@@ -6,7 +6,7 @@ metadata:
   labels:
     name: {{project_prefix}}-pipeline
   annotations:
-    pipeline.alpha.openshift.io/uses: '[{"name": "{{template_dc}}", "namespace": "{{project_prefix}}-dev", "kind": "DeploymentConfig"},{"name": "{{template_dc}}", "namespace": "{{project_prefix}}-test", "kind": "DeploymentConfig"}]'
+    pipeline.alpha.openshift.io/uses: '[{"name": "{{app_name}}", "namespace": "{{project_prefix}}-dev", "kind": "DeploymentConfig"},{"name": "{{app_name}}", "namespace": "{{project_prefix}}-test", "kind": "DeploymentConfig"}]'
 spec:
   strategy:
     type: JenkinsPipeline
@@ -14,13 +14,13 @@ spec:
       jenkinsfile: |-
         node {
           stage 'buildInDevelopment'
-          openshiftBuild(namespace: '{{project_prefix}}-dev', buildConfig: '{{template_bc}}', showBuildLogs: 'true')
+          openshiftBuild(namespace: '{{project_prefix}}-dev', buildConfig: '{{app_name}}', showBuildLogs: 'true')
         }
 
         node {
           stage 'deployInDevelopment'
-          openshiftDeploy(namespace: '{{project_prefix}}-dev', deploymentConfig: '{{template_dc}}')
-          openshiftScale(namespace: '{{project_prefix}}-dev', deploymentConfig: '{{template_dc}}',replicaCount: '2')
+          openshiftDeploy(namespace: '{{project_prefix}}-dev', deploymentConfig: '{{app_name}}')
+          openshiftScale(namespace: '{{project_prefix}}-dev', deploymentConfig: '{{app_name}}',replicaCount: '2')
         }
 
         node {
@@ -30,9 +30,9 @@ spec:
 
         node {
           stage 'deployInTesting'
-          openshiftTag(namespace: '{{project_prefix}}-dev', sourceStream: '{{template_bc}}',  sourceTag: 'latest', destinationNamespace: '{{project_prefix}}-test',  destinationStream: '{{template_bc}}', destinationTag: 'latest')
-          openshiftDeploy(namespace: '{{project_prefix}}-test', deploymentConfig: '{{template_dc}}')
-          openshiftScale(namespace: '{{project_prefix}}-test', deploymentConfig: '{{template_dc}}',replicaCount: '3')
+          openshiftTag(namespace: '{{project_prefix}}-dev', sourceStream: '{{app_name}}',  sourceTag: 'latest', destinationNamespace: '{{project_prefix}}-test',  destinationStream: '{{app_name}}', destinationTag: 'latest')
+          openshiftDeploy(namespace: '{{project_prefix}}-test', deploymentConfig: '{{app_name}}')
+          openshiftScale(namespace: '{{project_prefix}}-test', deploymentConfig: '{{app_name}}',replicaCount: '3')
         }
   output:
   resources:
