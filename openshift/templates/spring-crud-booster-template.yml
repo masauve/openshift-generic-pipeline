@@ -1,0 +1,321 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: spring-crud-persistent
+  app: spring-crud
+message: |-
+  The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.
+metadata:
+  annotations:
+    description: A template for the RHOAR Spring Crud Booster application
+    iconClass: icon-java
+    openshift.io/display-name: Spring CRUD (Persistent)
+    openshift.io/documentation-url: "https://github.com/gnunn1/openshift-generic-pipeline"
+    template.openshift.io/bindable: "false"
+    tags: php
+    template.openshift.io/long-description: This template defines resources needed
+      for the Spring CRUD application, including a build configuration, application
+      deployment configuration, and database deployment configuration.
+  name: spring-crud-persistent
+  label:
+    app: ${NAME}
+objects:
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: ${NAME}
+  stringData:
+    database-name: ${DATABASE_NAME}
+    database-password: ${DATABASE_PASSWORD}
+    database-user: ${DATABASE_USER}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      description: Exposes and load balances the application pods
+      service.alpha.openshift.io/dependencies: '[{"name": "${DATABASE_SERVICE_NAME}",
+        "kind": "Service"}]'
+    name: ${NAME}
+  spec:
+    ports:
+    - name: web
+      port: 8080
+      targetPort: 8080
+    selector:
+      name: ${NAME}
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+      template.openshift.io/expose-uri: http://{.spec.host}{.spec.path}
+    name: ${NAME}
+  spec:
+    host:
+    to:
+      kind: Service
+      name: ${NAME}
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations:
+      description: Keeps track of changes in the application image
+    name: ${NAME}
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    annotations:
+      description: Defines how to build the application
+    name: ${NAME}
+  spec:
+    output:
+      to:
+        kind: ImageStreamTag
+        name: ${NAME}:latest
+    source:
+      contextDir: ${CONTEXT_DIR}
+      git:
+        ref: ${SOURCE_REPOSITORY_REF}
+        uri: ${SOURCE_REPOSITORY_URL}
+      type: Git
+    strategy:
+      sourceStrategy:
+        from:
+          kind: ImageStreamTag
+          name: redhat-openjdk18-openshift:1.2
+          namespace: ${NAMESPACE}
+      type: Source
+    triggers:
+    - type: ImageChange
+    - type: ConfigChange
+    - github:
+        secret: ${GITHUB_WEBHOOK_SECRET}
+      type: GitHub
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      description: Defines how to deploy the application server
+    name: ${NAME}
+  spec:
+    replicas: 1
+    selector:
+      name: ${NAME}
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          name: ${NAME}
+        name: ${NAME}
+      spec:
+        containers:
+        - env:
+          - name: JAVA_OPTIONS
+            value: "-Dspring.profiles.active=openshift"
+          - name: MY_DATABASE_SERVICE_HOST
+            value: ${DATABASE_SERVICE_NAME}
+          - name: MY_DATABASE_SERVICE_PORT
+            value: "5432"
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: database-user
+                name: ${NAME}
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-password
+                name: ${NAME}
+          image: ' '
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            timeoutSeconds: 3
+          name: ${NAME} 
+          ports:
+          - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            timeoutSeconds: 3
+          resources:
+            limits:
+              memory: ${MEMORY_LIMIT}
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${NAME}
+        from:
+          kind: ImageStreamTag
+          name: ${NAME}:latest
+      type: ImageChange
+    - type: ConfigChange
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${DATABASE_SERVICE_NAME}
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${VOLUME_CAPACITY}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      description: Exposes the database server
+    name: ${DATABASE_SERVICE_NAME}
+  spec:
+    ports:
+    - name: postgresql
+      port: 5432
+      targetPort: 5432
+    selector:
+      name: ${DATABASE_SERVICE_NAME}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      description: Defines how to deploy the database
+    name: ${DATABASE_SERVICE_NAME}
+  spec:
+    replicas: 1
+    selector:
+      name: ${DATABASE_SERVICE_NAME}
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          name: ${DATABASE_SERVICE_NAME}
+        name: ${DATABASE_SERVICE_NAME}
+      spec:
+        containers:
+        - env:
+          - name: POSTGRESQL_USER
+            valueFrom:
+              secretKeyRef:
+                key: database-user
+                name: ${NAME}
+          - name: POSTGRESQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-password
+                name: ${NAME}
+          - name: POSTGRESQL_DATABASE
+            valueFrom:
+              secretKeyRef:
+                key: database-name
+                name: ${NAME}
+          image: ' '
+          livenessProbe:
+            exec:
+              command:
+                - /usr/libexec/check-container
+                - '--live'
+            failureThreshold: 3
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 10
+          name: postgresql
+          ports:
+          - containerPort: 5432
+          readinessProbe:
+            exec:
+              command:
+                - /usr/libexec/check-container
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              memory: ${MEMORY_DATABASE_LIMIT}
+          volumeMounts:
+          - mountPath: /var/lib/pgsql/data
+            name: ${DATABASE_SERVICE_NAME}-data
+        volumes:
+        - name: ${DATABASE_SERVICE_NAME}-data
+          persistentVolumeClaim:
+            claimName: ${DATABASE_SERVICE_NAME}
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - postgresql
+        from:
+          kind: ImageStreamTag
+          name: postgresql:9.6
+          namespace: ${NAMESPACE}
+      type: ImageChange
+    - type: ConfigChange
+parameters:
+- description: The name assigned to all of the frontend objects defined in this template.
+  displayName: Name
+  name: NAME
+  required: true
+  value: spring-crud
+- description: The OpenShift Namespace where the ImageStream resides.
+  displayName: Namespace
+  name: NAMESPACE
+  required: true
+  value: openshift
+- description: Maximum amount of memory the application container can use.
+  displayName: Memory Limit (Application)
+  name: MEMORY_LIMIT
+  required: true
+  value: 512Mi
+- description: Maximum amount of memory the database container can use.
+  displayName: Memory Limit (Database)
+  name: MEMORY_DATABASE_LIMIT
+  required: true
+  value: 256Mi
+- description: Volume space available for data, e.g. 512Mi, 2Gi
+  displayName: Volume Capacity
+  name: VOLUME_CAPACITY
+  required: true
+  value: 512Mi
+- description: The URL of the repository with your application source code.
+  displayName: Git Repository URL
+  name: SOURCE_REPOSITORY_URL
+  required: true
+  value: https://github.com/gnunn1/spring-crud-booster
+- description: Set this to a branch name, tag or other ref of your repository if you
+    are not using the default branch.
+  displayName: Git Reference
+  name: SOURCE_REPOSITORY_REF
+- description: Set this to the relative path to your project if it is not in the root
+    of your repository.
+  displayName: Context Directory
+  name: CONTEXT_DIR
+- description: Github trigger secret.  A difficult to guess string encoded as part
+    of the webhook URL.  Not encrypted.
+  displayName: GitHub Webhook Secret
+  from: '[a-zA-Z0-9]{40}'
+  generate: expression
+  name: GITHUB_WEBHOOK_SECRET
+- displayName: Database Service Name
+  name: DATABASE_SERVICE_NAME
+  required: true
+  value: postgresql
+- displayName: Database Name
+  name: DATABASE_NAME
+  required: true
+  value: my_data
+- displayName: Database User
+  from: "user[A-Z0-9]{3}"
+  generate: "expression"
+  required: true
+  name: DATABASE_USER
+- displayName: Database Password
+  from: '[a-zA-Z0-9]{16}'
+  generate: expression
+  name: DATABASE_PASSWORD
