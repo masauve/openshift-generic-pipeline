@@ -26,7 +26,7 @@ spec:
         node {
           stage 'test'
           try {
-            sh "curl -s --head --request GET {{app_name}}.project_prefix:{{test_port}}/{{test_path}} | grep '200 OK'"
+            sh "curl -s --head --request GET http://{{app_name}}.project_prefix:{{test_port}}/{{test_path}} | grep '200 OK'"
             return true
           } catch (Exception e) {
             return false
