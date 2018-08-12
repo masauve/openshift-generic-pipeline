@@ -8,6 +8,12 @@ metadata:
   annotations:
     pipeline.alpha.openshift.io/uses: '[{"name": "{{app_name}}", "namespace": "{{project_prefix}}-dev", "kind": "DeploymentConfig"},{"name": "{{app_name}}", "namespace": "{{project_prefix}}-test", "kind": "DeploymentConfig"}]'
 spec:
+  runPolicy: Serial
+  source:
+    type: Git
+    git:
+      uri: '{{git_repo}}'
+      ref: '{{git_ref}}'
   strategy:
     type: JenkinsPipeline
     jenkinsPipelineStrategy:

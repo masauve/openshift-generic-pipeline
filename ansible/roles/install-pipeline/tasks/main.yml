@@ -66,6 +66,22 @@
 - name: Update test imagePullPolicy
   shell: "oc patch dc/{{app_name}} -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"{{app_name}}\",\"imagePullPolicy\":\"Always\"}]}}}}'"
 
+- name: Determine git repo
+  shell: "oc get bc/{{app_name}} -n {{project_prefix}}-dev -o jsonpath='{.spec.source.git.uri}'"
+  register: result
+
+- name: Store git repo
+  set_fact:
+    git_repo: "{{result.stdout}}"
+
+- name: Determine git ref
+  shell: "oc get bc/{{app_name}} -n {{project_prefix}}-dev -o jsonpath='{.spec.source.git.ref}'"
+  register: result
+
+- name: Store git ref
+  set_fact:
+    git_ref: "{{result.stdout}}"
+
 - name: create temporary file
   tempfile:
     state: file
