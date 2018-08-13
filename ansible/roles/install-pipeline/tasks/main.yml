@@ -18,9 +18,25 @@
   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"
   changed_when: "'exists' not in command_result.stderr"
 
+# - name: Create Environments
+#   k8s_raw:
+#     state: present
+#     definition:
+#       apiVersion: project.openshift.io/v1
+#       kind: ProjectRequest
+#       displayName: "{{display_prefix}} {{item.display}}"
+#       metadata:
+#         name: "{{project_prefix}}-{{item.name}}"
+#   with_items:
+#     - name: cicd
+#       display: CI/CD
+#     - name: dev
+#       display: Development
+#     - name: test
+#       display: Test
+
 - name: Create jenkins app
   shell: "oc new-app {{ jenkins_template }} -n {{project_prefix}}-cicd"
-  register: command_result
   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"
   changed_when: "'exists' not in command_result.stderr"
 
@@ -28,7 +44,6 @@
   shell: |
     oc new-project {{project_prefix}}-dev --display-name="{{display_prefix}} Development"
     oc new-project {{project_prefix}}-test --display-name="{{display_prefix}} Test"
-  register: command_result
   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"
   changed_when: "'exists' not in command_result.stderr"
 

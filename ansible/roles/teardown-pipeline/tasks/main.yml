@@ -3,11 +3,12 @@
   shell: "oc login --insecure-skip-tls-verify=true -u {{ username }} -p {{ password }} {{ openshift_master }}"
 
 - name: Delete Environments
-  shell: |
-    oc delete project {{project_prefix}}-dev
-    oc delete project {{project_prefix}}-test
-    oc delete project {{project_prefix}}-cicd
+  shell: oc delete project {{project_prefix}}-{{item}}
   register: command_result
   ignore_errors: yes
   failed_when: "'exists' not in command_result.stderr and command_result.rc != 0"
   changed_when: "'exists' not in command_result.stderr"
+  with_items:
+    - dev
+    - test
+    - cicd
