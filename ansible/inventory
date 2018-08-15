@@ -3,3 +3,6 @@ localhost ansible_connection=local
 
 [cluster-up]
 localhost ansible_connection=local
+
+[ocplab]
+localhost ansible_connection=local

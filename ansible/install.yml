@@ -1,6 +1,6 @@
 ---
 - name: Install Pipeline in OpenShift
-  hosts: cluster-up
+  hosts: ocplab
 
   vars_files:
     - vars/vars.yml

@@ -68,7 +68,7 @@
 
 - name: Create application in environments
   shell: |
-    oc process -f {{template_url}} | oc create -n {{project_prefix}}-{{item}} -f -
+    oc process -f {{template_url}} {{template_params}}| oc create -n {{project_prefix}}-{{item}} -f -
     oc cancel-build bc/{{app_name}} -n {{project_prefix}}-{{item}}
     oc set triggers dc {{app_name}} --containers='{{app_name}}' --from-image='{{app_name}}:latest' --manual=true -n {{project_prefix}}-{{item}}
   register: command_result

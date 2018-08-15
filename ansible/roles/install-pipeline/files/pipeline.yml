@@ -50,6 +50,13 @@ spec:
           openshiftDeploy(namespace: '{{project_prefix}}-test', deploymentConfig: '{{app_name}}')
           openshiftScale(namespace: '{{project_prefix}}-test', deploymentConfig: '{{app_name}}',replicaCount: '3')
         }
+  triggers:
+    - github:
+        secret: secret101
+      type: GitHub
+    - generic:
+        secret: secret101
+      type: Generic        
   output:
   resources:
   postCommit:
