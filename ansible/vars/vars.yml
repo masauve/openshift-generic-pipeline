@@ -1,6 +1,6 @@
 
 # The template to use to create the application
-template_url: https://raw.githubusercontent.com/gnunn1/openshift-generic-pipeline/master/openshift/templates/spring-crud-booster-template.yml
+template_url: https://raw.githubusercontent.com/masauve/openshift-generic-pipeline/master/openshift/templates/spring-crud-booster-template.yml
 template_params: "-p SOURCE_REPOSITORY_URL=https://github.com/gnunn1/spring-crud-booster"
 
 # The name of the application, all of the dc, bc, is, container name, etc must be using this name

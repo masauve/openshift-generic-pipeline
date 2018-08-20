@@ -1,6 +1,6 @@
 ---
 - name: Remove Projects from OpenShift
-  hosts: ocplab
+  hosts: myocp
 
   vars_files:
     - vars/vars.yml

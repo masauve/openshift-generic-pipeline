@@ -1,8 +1,8 @@
 [local]
-localhost ansible_connection=local
+localhost ansible_connection=local ansible_python_interpreter=python
 
 [cluster-up]
-localhost ansible_connection=local
+localhost ansible_connection=local ansible_python_interpreter=python
 
-[ocplab]
-localhost ansible_connection=local
+[myocp]
+localhost ansible_connection=local ansible_python_interpreter=python username=dev01 password=dev openshift_master=https://myocp.net:8443 openshift_domain=apps.myocp.net
