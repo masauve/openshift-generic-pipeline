@@ -7,8 +7,8 @@ template_params: "-p SOURCE_REPOSITORY_URL=https://github.com/gnunn1/spring-crud
 app_name: spring-crud
 
 # What environments use for the prefix, i.e. spring-crud-dev, spring-crud-test where "spring-crud" would the prefix
-project_prefix: spring-crud
-display_prefix: "Spring Crud"
+project_prefix: spring
+display_prefix: "Spring"
 
 # Pipeline smoke test with curl
 test_port: "8080"
