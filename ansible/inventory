@@ -5,4 +5,4 @@ localhost ansible_connection=local ansible_python_interpreter=python
 localhost ansible_connection=local ansible_python_interpreter=python
 
 [myocp]
-localhost ansible_connection=local ansible_python_interpreter=python username=dev01 password=dev openshift_master=myocp.net:8443 openshift_domain=apps.myocp.net
+localhost ansible_connection=local ansible_python_interpreter=python username=dev01 password=XXXXXXXX openshift_master=XXXX openshift_domain=XXXXXXXXXx
